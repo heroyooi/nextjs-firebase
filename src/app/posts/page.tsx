@@ -74,13 +74,33 @@ export default function PostsPage() {
         {posts.map((p) => (
           <li
             key={p.id}
-            style={{ border: '1px solid #eee', borderRadius: 8, padding: 12 }}
+            style={{
+              display: 'flex',
+              gap: 12,
+              border: '1px solid #eee',
+              borderRadius: 8,
+              padding: 12,
+            }}
           >
-            <Link href={`/posts/${p.id}`} style={{ fontWeight: 600 }}>
-              {p.title}
-            </Link>
-            <div style={{ fontSize: 12, opacity: 0.7, marginTop: 6 }}>
-              {p.isPublic ? '공개' : '비공개'} · {p.uid.slice(0, 6)}…
+            {p.thumbUrl && (
+              <img
+                src={p.thumbUrl}
+                alt=''
+                style={{
+                  width: 96,
+                  height: 64,
+                  objectFit: 'cover',
+                  borderRadius: 8,
+                }}
+              />
+            )}
+            <div style={{ display: 'grid' }}>
+              <Link href={`/posts/${p.id}`} style={{ fontWeight: 600 }}>
+                {p.title}
+              </Link>
+              <div style={{ fontSize: 12, opacity: 0.7, marginTop: 6 }}>
+                {p.isPublic ? '공개' : '비공개'} · {p.uid.slice(0, 6)}…
+              </div>
             </div>
           </li>
         ))}

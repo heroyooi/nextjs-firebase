@@ -13,6 +13,7 @@ import {
 import { onAuthStateChanged } from 'firebase/auth';
 import type { Post } from '@/types/post';
 import PostForm from '@/components/PostForm';
+import { deleteByPath, uploadImageByPath } from '@/lib/storage';
 
 export default function PostDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -37,21 +38,46 @@ export default function PostDetailPage() {
     title: string;
     content: string;
     isPublic: boolean;
+    file: File | null;
   }) => {
+    if (!post) return;
+
+    let nextThumbUrl = post.thumbUrl ?? null;
+    let nextThumbPath = post.thumbPath ?? null;
+
+    // 파일 교체가 있으면 새로 업로드 → 이전 파일 삭제
+    if (data.file && uid) {
+      const fileName = `${Date.now()}-${data.file.name}`;
+      const fullPath = `users/${uid}/posts/${post.id}/${fileName}`;
+      const uploaded = await uploadImageByPath(data.file, fullPath);
+      // 이전 파일 삭제(있으면)
+      if (post.thumbPath && post.thumbPath !== uploaded.path) {
+        await deleteByPath(post.thumbPath);
+      }
+      nextThumbUrl = uploaded.url;
+      nextThumbPath = uploaded.path;
+    }
+
     await updateDoc(doc(db, 'posts', id), {
       title: data.title,
       content: data.content,
       isPublic: data.isPublic,
+      thumbUrl: nextThumbUrl,
+      thumbPath: nextThumbPath,
       updatedAt: serverTimestamp(),
     });
+
     setEditing(false);
-    // 상세 재조회
     const snap = await getDoc(doc(db, 'posts', id));
     setPost({ id: snap.id, ...(snap.data() as any) });
   };
 
   const remove = async () => {
+    if (!post) return;
     if (!confirm('삭제하시겠습니까?')) return;
+
+    // 파일 먼저 정리(있으면)
+    await deleteByPath(post.thumbPath);
     await deleteDoc(doc(db, 'posts', id));
     router.replace('/posts');
   };
@@ -63,6 +89,18 @@ export default function PostDetailPage() {
       {!editing ? (
         <>
           <h1>{post.title}</h1>
+          {post.thumbUrl && (
+            <img
+              src={post.thumbUrl}
+              alt='thumbnail'
+              style={{
+                width: '100%',
+                maxWidth: 720,
+                borderRadius: 12,
+                margin: '12px 0',
+              }}
+            />
+          )}
           {post.content && (
             <p style={{ whiteSpace: 'pre-wrap', marginTop: 12 }}>
               {post.content}
@@ -101,6 +139,7 @@ export default function PostDetailPage() {
               title: post.title,
               content: post.content,
               isPublic: post.isPublic,
+              thumbUrl: post.thumbUrl,
             }}
             submitText='수정 완료'
             onSubmit={update}
