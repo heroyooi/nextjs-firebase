@@ -3,7 +3,8 @@ import { updatePostAction, deletePostAction } from '@/app/actions/postActions';
 import { redirect } from 'next/navigation';
 import Image from 'next/image';
 
-export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs'; // admin SDK 사용 시 권장
+export const dynamic = 'force-dynamic'; // 또는 export const revalidate = 60;
 
 export default async function PostDetail({
   params,
