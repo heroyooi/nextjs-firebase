@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { auth, db } from '@/lib/firebase.client';
 import {
   collection,
@@ -83,12 +84,12 @@ export default function PostsPage() {
             }}
           >
             {p.thumbUrl && (
-              <img
+              <Image
                 src={p.thumbUrl}
+                width={96}
+                height={64}
                 alt=''
                 style={{
-                  width: 96,
-                  height: 64,
                   objectFit: 'cover',
                   borderRadius: 8,
                 }}

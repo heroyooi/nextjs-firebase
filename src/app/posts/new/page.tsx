@@ -2,6 +2,7 @@ import { createPostAction } from '@/app/actions/postActions';
 import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export default function NewPostPage() {
   // ✅ 단일 파라미터(폼데이터)만 받는 서버 함수
@@ -34,6 +35,7 @@ export default function NewPostPage() {
           <input type='checkbox' name='isPublic' defaultChecked />
           공개글로 등록
         </label>
+        <input type='file' name='file' accept='image/*' />
         <button type='submit' style={{ padding: '10px 12px', borderRadius: 8 }}>
           등록
         </button>
