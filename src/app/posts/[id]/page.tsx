@@ -7,9 +7,11 @@ export const dynamic = 'force-dynamic';
 export default async function PostDetail({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const snap = await adminDb.collection('posts').doc(params.id).get();
+  const { id } = await params;
+
+  const snap = await adminDb.collection('posts').doc(id).get();
   if (!snap.exists) return <main>존재하지 않는 글입니다.</main>;
   const post = { id: snap.id, ...(snap.data() as any) };
 
