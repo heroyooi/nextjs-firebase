@@ -1,67 +1,43 @@
-'use client';
+import { createPostAction } from '@/app/actions/postActions';
+import { redirect } from 'next/navigation';
 
-import { useRouter } from 'next/navigation';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase.client';
-import { uploadImageByPath } from '@/lib/storage';
-import PostForm from '@/components/PostForm';
-import { useAuth } from '@/hooks/useAuth';
+export const dynamic = 'force-dynamic';
 
 export default function NewPostPage() {
-  const router = useRouter();
-  const { user, loading } = useAuth();
-
-  if (loading) return null;
-  if (!user) {
-    router.replace('/login');
-    return null;
-  }
-
-  const create = async (data: {
-    title: string;
-    content: string;
-    isPublic: boolean;
-    file: File | null;
-  }) => {
-    // 일단 문서부터 만들고 postId를 얻어 경로를 안정적으로 구성
-    const docRef = await addDoc(collection(db, 'posts'), {
-      uid: user.uid,
-      title: data.title,
-      content: data.content,
-      isPublic: data.isPublic,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-      thumbUrl: null,
-      thumbPath: null,
-    });
-
-    let thumbUrl: string | null = null;
-    let thumbPath: string | null = null;
-
-    if (data.file) {
-      const fileName = `${Date.now()}-${data.file.name}`;
-      const fullPath = `users/${user.uid}/posts/${docRef.id}/${fileName}`;
-      const uploaded = await uploadImageByPath(data.file, fullPath);
-      thumbUrl = uploaded.url;
-      thumbPath = uploaded.path;
-
-      // 썸네일 정보만 업데이트
-      await (
-        await import('firebase/firestore')
-      ).updateDoc(docRef, {
-        thumbUrl,
-        thumbPath,
-        updatedAt: serverTimestamp(),
-      });
+  // ✅ 단일 파라미터(폼데이터)만 받는 서버 함수
+  async function handleAction(formData: FormData) {
+    'use server';
+    const res = await createPostAction(formData);
+    if (!res.ok) {
+      console.error(res.message);
+      return;
     }
-
-    router.replace(`/posts/${docRef.id}`);
-  };
+    redirect(`/posts/${res.id}`);
+  }
 
   return (
     <main style={{ maxWidth: 720, margin: '40px auto', padding: 16 }}>
-      <h1>새 글 작성</h1>
-      <PostForm onSubmit={create} submitText='등록' />
+      <h1>새 글 작성 (Server Action)</h1>
+      <form action={handleAction} style={{ display: 'grid', gap: 12 }}>
+        <input
+          name='title'
+          placeholder='제목'
+          style={{ padding: 10, border: '1px solid #ddd', borderRadius: 8 }}
+        />
+        <textarea
+          name='content'
+          placeholder='내용(선택)'
+          rows={8}
+          style={{ padding: 10, border: '1px solid #ddd', borderRadius: 8 }}
+        />
+        <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <input type='checkbox' name='isPublic' defaultChecked />
+          공개글로 등록
+        </label>
+        <button type='submit' style={{ padding: '10px 12px', borderRadius: 8 }}>
+          등록
+        </button>
+      </form>
     </main>
   );
 }

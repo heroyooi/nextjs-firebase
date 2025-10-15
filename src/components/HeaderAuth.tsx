@@ -9,6 +9,7 @@ export default function HeaderAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // 로그인 상태 감시
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
       setUser(u);
@@ -16,6 +17,16 @@ export default function HeaderAuth() {
     });
     return () => unsub();
   }, []);
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/session', { method: 'DELETE' });
+      await signOut(auth);
+      window.location.href = '/';
+    } catch (e) {
+      console.error('로그아웃 실패:', e);
+    }
+  };
 
   if (loading) return null;
 
@@ -44,7 +55,7 @@ export default function HeaderAuth() {
               안녕하세요, {user.email}
             </span>
             <button
-              onClick={() => signOut(auth)}
+              onClick={handleLogout}
               style={{
                 padding: '6px 10px',
                 border: '1px solid #ddd',

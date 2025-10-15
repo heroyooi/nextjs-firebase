@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import { auth } from '@/lib/firebase.client';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, getIdToken } from 'firebase/auth'; // ★ getIdToken 추가
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -18,7 +18,24 @@ export default function LoginPage() {
     setErr(null);
     setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, pw);
+      // 1) Firebase Auth 로그인
+      const cred = await signInWithEmailAndPassword(auth, email, pw);
+
+      // 2) ID 토큰 획득(강제 갱신 true 권장)
+      const idToken = await getIdToken(cred.user, true);
+
+      // 3) 서버에 세션쿠키 설정 요청
+      const r = await fetch('/api/auth/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken }),
+      });
+      if (!r.ok) {
+        const j = await r.json().catch(() => ({}));
+        throw new Error(j?.message || 'SESSION_SET_FAILED');
+      }
+
+      // 4) 서버 세션까지 준비되었으니 이동
       router.replace('/dashboard');
     } catch (e: any) {
       setErr(e?.message ?? '로그인 실패');
